@@ -1,0 +1,46 @@
+# Environment variables (contains secrets)
+.env
+
+# Database
+data/*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.eggs/
+*.egg-info/
+*.egg
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+lib/
+pydantic_agent_project/
+include/
+bin/
+share/
+pyvenv.cfg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual env config files
+etc/
+
+# Claude local settings
+.claude/
