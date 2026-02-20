@@ -4,17 +4,14 @@ Configures the Pydantic AI agent with cybersecurity learning focus.
 """
 
 import os
-from dotenv import load_dotenv
+import streamlit as st
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelMessage
 
-# Load environment variables
-load_dotenv()
 
 # Ensure API key is available
-openai_api_key = os.getenv('OPENAI_API_KEY')
-if openai_api_key:
-    os.environ['OPENAI_API_KEY'] = openai_api_key
+openai_api_key = st.secrets["OPENAI_API_KEY"]
+os.environ['OPENAI_API_KEY'] = openai_api_key
 
 # Suppress Logfire warning
 os.environ['LOGFIRE_IGNORE_NO_CONFIG'] = '1'
