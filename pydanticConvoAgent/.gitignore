@@ -1,5 +1,6 @@
 # Environment variables (contains secrets)
 .env
+.streamlit/secrets.toml
 
 # Database
 data/*.db

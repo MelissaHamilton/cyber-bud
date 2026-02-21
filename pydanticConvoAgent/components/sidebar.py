@@ -19,7 +19,8 @@ def _render_session_row(session: dict):
     if is_current:
         col1, col2 = st.columns([5, 1])
         with col1:
-            st.button(label, key=f"session_{session['id']}", use_container_width=True, type="primary")
+            st.button(
+                label, key=f"session_{session['id']}", use_container_width=True, type="primary")
         with col2:
             st.empty()
     else:
@@ -45,6 +46,11 @@ def render_sidebar():
             border-left-width: 4px;
             background-color: transparent;
             color: inherit;
+        }
+        [data-testid="stSidebar"] button[kind="secondary"] {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -73,7 +79,8 @@ def render_sidebar():
             st.rerun()
 
         # Session search
-        search_query = st.text_input("Search sessions", placeholder="Search...", label_visibility="collapsed")
+        search_query = st.text_input(
+            "Search sessions", placeholder="Search...", label_visibility="collapsed")
 
         # Recent sessions
         recent_sessions = db.get_recent_sessions(limit=20)
