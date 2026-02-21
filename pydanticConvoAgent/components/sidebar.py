@@ -47,10 +47,12 @@ def render_sidebar():
             background-color: transparent;
             color: inherit;
         }
-        [data-testid="stSidebar"] button[kind="secondary"] {
+        [data-testid="stSidebar"] [data-testid="stColumn"]:last-child button[kind="secondary"] {
             display: flex;
             align-items: center;
             justify-content: center;
+            border-color: transparent;
+            background: transparent;
         }
         </style>
     """, unsafe_allow_html=True)
