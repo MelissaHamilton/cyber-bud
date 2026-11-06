@@ -18,6 +18,7 @@ from src.models import extract_concepts
 from src import database as db
 from src.quiz import generate_quiz_question, get_result_message, create_initial_quiz_state
 from components.sidebar import render_sidebar, ensure_session
+from components.visitor import get_visitor_id
 
 MAX_MESSAGES_PER_SESSION = 25
 
@@ -293,6 +294,11 @@ def finish_quiz():
 
 
 def main():
+    with db.visitor_database(get_visitor_id()):
+        render_app()
+
+
+def render_app():
     # Render sidebar (sessions, progress)
     render_sidebar()
 

@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta charset="utf-8"></head><body>
+<script>
+  const cookieName = "cyberbud_visitor";
+  const validToken = /^[a-f0-9]{64}$/;
+  let lastValue;
+  const send = (type, data = {}) => window.parent.postMessage(
+    { isStreamlitMessage: true, type, ...data }, window.location.origin
+  );
+  const readCookie = () => document.cookie.split("; ")
+    .find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
+
+  window.addEventListener("message", event => {
+    if (event.source !== window.parent || event.origin !== window.location.origin || event.data?.type !== "streamlit:render") return;
+    let value;
+    try {
+      let token = readCookie();
+      if (!validToken.test(token || "")) {
+        token = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, "0")).join("");
+        const secure = window.location.protocol === "https:" ? "; Secure" : "";
+        document.cookie = `${cookieName}=${token}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+      }
+      // Do not open storage unless the cookie was actually accepted by the browser.
+      value = readCookie() === token ? token : { error: "cookies_unavailable" };
+    } catch {
+      value = { error: "cookies_unavailable" };
+    }
+    if (JSON.stringify(value) !== JSON.stringify(lastValue)) {
+      lastValue = value;
+      send("streamlit:setComponentValue", { value, dataType: "json" });
+    }
+    send("streamlit:setFrameHeight", { height: 0 });
+  });
+  send("streamlit:componentReady", { apiVersion: 1 });
+</script>
+</body></html>
