@@ -20,7 +20,7 @@ from src.quiz import generate_quiz_question, get_result_message, create_initial_
 from components.sidebar import render_sidebar, ensure_session
 from components.visitor import get_visitor_id
 
-MAX_MESSAGES_PER_SESSION = 25
+BREATHER_MESSAGE = "CyberBud’s taking a breather. Come back tomorrow!"
 
 # Allow nested async event loops (needed for Streamlit)
 nest_asyncio.apply()
@@ -37,16 +37,6 @@ st.set_page_config(
 def get_agent():
     """Cache the agent instance."""
     return create_agent()
-
-
-def check_message_limit() -> bool:
-    """Return True if the session message limit has been reached."""
-    return st.session_state.get("message_count", 0) >= MAX_MESSAGES_PER_SESSION
-
-
-def increment_message_count():
-    """Increment the session message counter."""
-    st.session_state.message_count = st.session_state.get("message_count", 0) + 1
 
 
 def _get_openai_error_code(body: object) -> str | None:
@@ -146,18 +136,11 @@ def render_quiz_question(agent):
     if not quiz_state:
         return
 
-    # Check message limit before generating a question
-    if check_message_limit():
-        st.warning(
-            f"You've reached the {MAX_MESSAGES_PER_SESSION}-message limit for this session. "
-            "Start a new session to continue quizzing."
-        )
-        st.session_state.quiz_mode = False
-        st.session_state.quiz_state = None
-        return
-
-    # Check if we need to generate a question
+    # Already generated questions remain answerable after the daily limit.
     if quiz_state["loading"]:
+        if not db.reserve_daily_message():
+            st.info(BREATHER_MESSAGE)
+            return
         current_concept = quiz_state["concepts"][quiz_state["current_index"]]
         with st.spinner(f"Generating question about {current_concept['name']}..."):
             try:
@@ -183,7 +166,6 @@ def render_quiz_question(agent):
                 return
 
             if quiz_data:
-                increment_message_count()
                 quiz_state["question"] = quiz_data["question"]
                 quiz_state["options"] = quiz_data["options"]
                 quiz_state["correct"] = quiz_data["correct"]
@@ -316,8 +298,6 @@ def render_app():
         st.session_state.messages = []
     if "pydantic_messages" not in st.session_state:
         st.session_state.pydantic_messages = []
-    if "message_count" not in st.session_state:
-        st.session_state.message_count = 0
 
     # Initialize quiz state
     init_quiz_state()
@@ -361,12 +341,9 @@ def render_app():
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
-        if check_message_limit():
-            st.info(
-                f"You've reached the {MAX_MESSAGES_PER_SESSION}-message limit for this session. "
-                "Start a new session from the sidebar to keep chatting."
-            )
-            st.chat_input("Message limit reached", disabled=True)
+        if db.get_daily_messages_remaining() == 0:
+            st.info(BREATHER_MESSAGE)
+            st.chat_input("Daily limit reached — back tomorrow!", disabled=True)
         else:
             # Handle pending concept question (from sidebar "ask about this")
             if "pending_concept_question" in st.session_state and st.session_state.pending_concept_question:
@@ -384,6 +361,9 @@ def render_app():
 
 def process_user_input(agent, user_input: str):
     """Process user input and get AI response."""
+    if not db.reserve_daily_message():
+        st.info(BREATHER_MESSAGE)
+        return
     # Display user message
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -420,9 +400,6 @@ def process_user_input(agent, user_input: str):
 
         # Display response
         st.markdown(response_text)
-
-    # Count only on success
-    increment_message_count()
 
     # Add to display messages
     st.session_state.messages.append({"role": "assistant", "content": response_text})
