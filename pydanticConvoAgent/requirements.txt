@@ -1,4 +1,5 @@
-streamlit>=1.30.0
+# Keep the deployed Streamlit runtime reproducible.
+streamlit==1.66.1
 pydantic-ai>=0.0.10
 python-dotenv>=1.0.0
 nest-asyncio>=1.5.8
