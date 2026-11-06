@@ -4,19 +4,39 @@ Handles SQLite operations for sessions, messages, and concepts.
 """
 
 import sqlite3
+import re
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
 # Database file location
 DATA_DIR = Path(__file__).parent.parent / "data"
-DB_PATH = DATA_DIR / "cyberbud.db"
+_database_path = ContextVar("cyberbud_database_path", default=None)
+
+
+@contextmanager
+def visitor_database(visitor_id: str):
+    """Use a private database for one visitor; never fall back to shared data."""
+    if not isinstance(visitor_id, str) or not re.fullmatch(r"[a-f0-9]{32}", visitor_id):
+        raise ValueError("Invalid visitor identifier")
+    path = DATA_DIR / "visitors" / visitor_id / "cyberbud.db"
+    token = _database_path.set(path)
+    try:
+        init_database()
+        yield
+    finally:
+        _database_path.reset(token)
 
 
 def get_connection() -> sqlite3.Connection:
     """Get a database connection with row factory for dict-like access."""
-    DATA_DIR.mkdir(exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    path = _database_path.get()
+    if path is None:
+        raise RuntimeError("A visitor database must be selected before accessing progress")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -349,7 +369,3 @@ def clear_all_data():
     cursor.execute("DELETE FROM concepts")
     conn.commit()
     conn.close()
-
-
-# Initialize database when module is imported
-init_database()

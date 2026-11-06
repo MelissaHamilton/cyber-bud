@@ -159,12 +159,12 @@ def render_sidebar():
 
         # --- Settings ---
         with st.expander("Settings"):
-            st.caption("Danger Zone")
-            if st.button("Reset All Data", type="secondary", use_container_width=True):
+            st.caption("Your data")
+            if st.button("Reset My Data", type="secondary", use_container_width=True):
                 st.session_state.confirm_reset = True
 
             if st.session_state.get("confirm_reset"):
-                st.warning("Delete ALL sessions, messages, and concepts?")
+                st.warning("Delete your sessions, messages, and concepts in this browser?")
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("Cancel", use_container_width=True):

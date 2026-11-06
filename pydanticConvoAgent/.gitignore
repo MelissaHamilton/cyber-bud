@@ -3,7 +3,7 @@
 .streamlit/secrets.toml
 
 # Database
-data/*.db
+data/
 
 # Python
 __pycache__/
