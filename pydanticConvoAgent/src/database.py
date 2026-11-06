@@ -5,14 +5,16 @@ Handles SQLite operations for sessions, messages, and concepts.
 
 import sqlite3
 import re
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from contextvars import ContextVar
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 # Database file location
 DATA_DIR = Path(__file__).parent.parent / "data"
+DAILY_MESSAGE_LIMIT = 50
 _database_path = ContextVar("cyberbud_database_path", default=None)
 
 
@@ -103,8 +105,35 @@ def init_database():
         )
     """)
 
+    # Separate from study data so resetting/deleting chats cannot reset the allowance.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS daily_usage (
+            day TEXT PRIMARY KEY,
+            messages INTEGER NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
+
+
+def _usage_day() -> str:
+    return datetime.now(ZoneInfo("America/Los_Angeles")).date().isoformat()
+
+
+def get_daily_messages_remaining() -> int:
+    with closing(get_connection()) as conn:
+        row = conn.execute("SELECT messages FROM daily_usage WHERE day = ?", (_usage_day(),)).fetchone()
+    return max(0, DAILY_MESSAGE_LIMIT - (row["messages"] if row else 0))
+
+
+def reserve_daily_message() -> bool:
+    """Count before the AI call; one atomic write prevents simultaneous-tab bypasses."""
+    with closing(get_connection()) as conn, conn:
+        return conn.execute("""
+            INSERT INTO daily_usage (day, messages) VALUES (?, 1)
+            ON CONFLICT(day) DO UPDATE SET messages = messages + 1
+            WHERE messages < ?
+        """, (_usage_day(), DAILY_MESSAGE_LIMIT)).rowcount == 1
 
 
 # --- Session Operations ---

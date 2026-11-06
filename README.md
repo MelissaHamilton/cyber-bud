@@ -22,7 +22,7 @@ streamlit run app.py
 ```
 
 ## Security Features
-- Rate limiting per session
+- 50 AI requests per browser per day (midnight Pacific reset)
 - Project-level budget caps
 - Secure API key management
 
@@ -39,4 +39,10 @@ python -m unittest discover -s tests -v
 node --test tests/test_browser_identity.mjs
 ```
 
-The Python checks require Streamlit from the app's existing requirements. Browser checks use Node's built-in test runner and add no packages.
+The Python checks use the dependencies in `pydanticConvoAgent/requirements.txt`. Browser checks use Node's built-in test runner and add no packages.
+
+## Daily allowance
+
+Each browser has its own 50 AI requests per Pacific calendar day, shared across its chats and tabs. Chat replies and generated quiz questions use the same allowance. New Session, deleting a chat, and Reset My Data do not reset it. Existing quiz questions can still be answered at the limit. Requests reserve a slot atomically before calling the AI, so simultaneous tabs cannot exceed 50; failed requests also count because they may incur API costs. At the limit, the app displays “CyberBud’s taking a breather. Come back tomorrow!”
+
+This uses the existing visitor SQLite storage with no new dependencies. It is not an app-wide spending cap: other browsers have their own allowance, and clearing cookies or losing host storage starts fresh.

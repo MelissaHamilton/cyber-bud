@@ -77,7 +77,6 @@ def render_sidebar():
             st.session_state.session_id = new_session_id
             st.session_state.messages = []
             st.session_state.pydantic_messages = []
-            st.session_state.message_count = 0
             st.rerun()
 
         # Session search
@@ -127,8 +126,9 @@ def render_sidebar():
         if needs_review_count > 0:
             st.metric("Needs Review", needs_review_count)
 
-        remaining = 25 - st.session_state.get("message_count", 0)
-        st.caption(f"{remaining} messages remaining this session")
+        remaining = db.get_daily_messages_remaining()
+        st.caption(f"{remaining} of {db.DAILY_MESSAGE_LIMIT} AI messages left today in this browser")
+        st.caption("Resets at midnight Pacific. Quiz questions count too.")
 
         # Quiz Me button
         if concept_count > 0:
@@ -179,7 +179,6 @@ def render_sidebar():
                         st.session_state.quiz_mode = False
                         st.session_state.quiz_concepts = []
                         st.session_state.quiz_state = None
-                        st.session_state.message_count = 0
                         st.session_state.confirm_reset = False
                         st.rerun()
 
@@ -231,7 +230,6 @@ def load_session(session_id: int):
 
     # Clear pydantic messages (will rebuild from conversation)
     st.session_state.pydantic_messages = []
-    st.session_state.message_count = 0
     st.session_state.quiz_mode = False
     st.session_state.quiz_state = None
     st.session_state.quiz_concepts = []
@@ -244,7 +242,6 @@ def ensure_session():
         st.session_state.session_id = db.create_session()
         st.session_state.messages = []
         st.session_state.pydantic_messages = []
-        st.session_state.message_count = 0
 
 
 def start_quiz_mode():
